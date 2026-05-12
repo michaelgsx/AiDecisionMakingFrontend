@@ -1,14 +1,27 @@
 # Deploy Vite SPA to Azure Static Web Apps.
+# Deployment token is read from Azure Key Vault at runtime (Option B).
 #
-# Your resource (example):
-#   Resource group: ai-rag-rg-1
-#   Static Web App: ai-rag-web-app
+# --- GitHub → Settings → Secrets and variables → Actions ---
 #
-# GitHub repo → Settings → Secrets and variables → Actions:
-#   AZURE_STATIC_WEB_APPS_API_TOKEN  (Portal: Static Web App → Manage deployment token)
-#   VITE_API_BASE_URL                (e.g. https://<your-api-app>.azurewebsites.net — no trailing slash)
-#   VITE_OPS_TOKEN                   (optional; must match API app setting OPS_TOKEN)
-#   VITE_USE_MOCK                    (optional; set to true only for UI demo without API)
+# Secrets (required):
+#   AZURE_CREDENTIALS
+#     Grant that app "Key Vault Secrets User" on the vault (IAM on the Key Vault resource).
+#     Create client secret on the app registration, then build JSON:
+#       { "clientId":"...","clientSecret":"...","subscriptionId":"...","tenantId":"..." }
+#     Paste the JSON into GitHub secret AZURE_CREDENTIALS.
+#
+# Repository variables (Settings → Secrets and variables → Actions → Variables):
+#   AZURE_KEYVAULT_NAME
+#     Name of the vault only (not URI), e.g. ai-rag-key
+#
+# Optional repository variable:
+#   KEYVAULT_SECRET_NAME
+#     Defaults to webapp-deployment-token if unset.
+#
+# Optional secrets (Vite build-time):
+#   VITE_API_BASE_URL   (no trailing slash)
+#   VITE_OPS_TOKEN
+#   VITE_USE_MOCK       (e.g. true for mock-only UI build)
 
 name: Deploy frontend (Azure Static Web Apps)
 
@@ -42,10 +55,36 @@ jobs:
           VITE_OPS_TOKEN: ${{ secrets.VITE_OPS_TOKEN }}
           VITE_USE_MOCK: ${{ secrets.VITE_USE_MOCK }}
 
+      - name: Azure login
+        uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Fetch Static Web Apps deployment token from Key Vault
+        run: |
+          set -euo pipefail
+          VAULT="${{ vars.AZURE_KEYVAULT_NAME }}"
+          if [ -z "$VAULT" ]; then
+            echo "Set repository variable AZURE_KEYVAULT_NAME to your Key Vault name (e.g. ai-rag-key)." >&2
+            exit 1
+          fi
+          SECRET_NAME='${{ vars.KEYVAULT_SECRET_NAME }}'
+          if [ -z "$SECRET_NAME" ]; then SECRET_NAME="webapp-deployment-token"; fi
+          TOKEN=$(az keyvault secret show \
+            --vault-name "$VAULT" \
+            --name "$SECRET_NAME" \
+            --query value -o tsv)
+          if [ -z "$TOKEN" ]; then
+            echo "Key Vault returned an empty secret." >&2
+            exit 1
+          fi
+          echo "::add-mask::$TOKEN"
+          echo "SWA_DEPLOYMENT_TOKEN=$TOKEN" >> "$GITHUB_ENV"
+
       - name: Deploy to Azure Static Web Apps
         uses: Azure/static-web-apps-deploy@v1
         with:
-          azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN }}
+          azure_static_web_apps_api_token: ${{ env.SWA_DEPLOYMENT_TOKEN }}
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           action: upload
           app_location: /
@@ -59,8 +98,30 @@ jobs:
     permissions:
       contents: read
     steps:
+      - name: Azure login
+        uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Fetch Static Web Apps deployment token from Key Vault
+        run: |
+          set -euo pipefail
+          VAULT="${{ vars.AZURE_KEYVAULT_NAME }}"
+          if [ -z "$VAULT" ]; then
+            echo "Set repository variable AZURE_KEYVAULT_NAME." >&2
+            exit 1
+          fi
+          SECRET_NAME='${{ vars.KEYVAULT_SECRET_NAME }}'
+          if [ -z "$SECRET_NAME" ]; then SECRET_NAME="webapp-deployment-token"; fi
+          TOKEN=$(az keyvault secret show \
+            --vault-name "$VAULT" \
+            --name "$SECRET_NAME" \
+            --query value -o tsv)
+          echo "::add-mask::$TOKEN"
+          echo "SWA_DEPLOYMENT_TOKEN=$TOKEN" >> "$GITHUB_ENV"
+
       - name: Close Static Web Apps PR environment
         uses: Azure/static-web-apps-deploy@v1
         with:
-          azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN }}
+          azure_static_web_apps_api_token: ${{ env.SWA_DEPLOYMENT_TOKEN }}
           action: close
