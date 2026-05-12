@@ -2,9 +2,9 @@
 
 interface ImportMetaEnv {
   readonly VITE_API_BASE_URL: string;
-  /** Ops 鉴权：会作为 `Authorization: Bearer <token>` 发送 */
+  /** Ops auth: sent as `Authorization: Bearer <token>`. */
   readonly VITE_OPS_TOKEN: string;
-  /** 设为 `true` 时未配置 API 也能用内置假数据演示 UI */
+  /** When `true`, UI can use built-in mock data without a configured API. */
   readonly VITE_USE_MOCK: string;
 }
 

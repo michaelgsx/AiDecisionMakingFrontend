@@ -31,7 +31,7 @@ async function parseJson<T>(res: Response): Promise<T> {
   }
 }
 
-/** POST /rag/ingest — 可按你后端路径改 `ingestPath` */
+/** POST /rag/ingest; override `ingestPath` if your backend uses a different route. */
 export async function ingestRecord(
   body: IngestPayload,
   ingestPath = "/rag/ingest",
@@ -58,11 +58,11 @@ export async function ingestRecord(
   if (!res.ok) {
     throw new Error(data.message ?? `HTTP ${res.status}`);
   }
-  /** 若后端只返回 recordIndex 而无 ok 字段，仍视为成功 */
+  /** Treat as success if the backend omits `ok` but returns HTTP 200. */
   return { ok: data.ok !== false, ...data };
 }
 
-/** POST /rag/assess — 可按你后端路径改 */
+/** POST /rag/assess; override `assessPath` if your backend uses a different route. */
 export async function assessRecord(
   body: AssessPayload,
   assessPath = "/rag/assess",

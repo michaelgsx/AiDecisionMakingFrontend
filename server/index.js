@@ -1,25 +1,27 @@
 /**
- * 本地 / EC2 / 容器 上运行的 API：接收前端 Submit，写入 DynamoDB。
+ * HTTP API (local / container / Azure App Service): ingests records into Azure SQL Database.
  *
- * 环境变量见 .env.example。AWS 凭证使用默认凭证链（环境变量、~/.aws/credentials、IAM Role 等）。
+ * See server/.env.example; run server/schema-azure-sql.sql once on the target database.
  */
 import "dotenv/config";
 import cors from "cors";
 import express from "express";
-import { createStore } from "./lib/dynamoStore.js";
+import { loadAzureSqlConfigFromEnv } from "./lib/azureSqlConfig.js";
+import { createAzureSqlStore } from "./lib/azureSqlStore.js";
 
 const PORT = Number(process.env.PORT ?? 8787);
-const TABLE_NAME = process.env.DYNAMODB_TABLE_NAME ?? "";
-const AWS_REGION = process.env.AWS_REGION ?? process.env.AWS_DEFAULT_REGION ?? "us-east-1";
 const OPS_TOKEN = process.env.OPS_TOKEN?.trim() ?? "";
 const CORS_ORIGIN = process.env.CORS_ORIGIN?.trim();
 
-if (!TABLE_NAME) {
-  console.error("缺少环境变量 DYNAMODB_TABLE_NAME");
+const sqlConfig = loadAzureSqlConfigFromEnv();
+if (!sqlConfig) {
+  console.error(
+    "Missing Azure SQL config: set AZURE_SQL_SERVER, AZURE_SQL_DATABASE, AZURE_SQL_USER, AZURE_SQL_PASSWORD",
+  );
   process.exit(1);
 }
 
-const store = createStore({ region: AWS_REGION, tableName: TABLE_NAME });
+const store = createAzureSqlStore(sqlConfig);
 const app = express();
 app.use(express.json({ limit: "2mb" }));
 
@@ -38,14 +40,24 @@ function requireOps(req, res, next) {
   const m = auth.match(/^Bearer\s+(.+)$/i);
   const token = m?.[1];
   if (token !== OPS_TOKEN) {
-    res.status(401).json({ ok: false, message: "未授权：Ops Token 不匹配" });
+    res.status(401).json({ ok: false, message: "Unauthorized: invalid ops token" });
     return;
   }
   next();
 }
 
-app.get("/health", (_req, res) => {
-  res.json({ ok: true });
+app.get("/health", async (_req, res) => {
+  try {
+    const pool = await store.getPool();
+    await pool.request().query("SELECT 1 AS ok");
+    res.json({ ok: true, db: "azure-sql" });
+  } catch (err) {
+    console.error(err);
+    res.status(503).json({
+      ok: false,
+      message: err instanceof Error ? err.message : "Database unavailable",
+    });
+  }
 });
 
 app.post("/rag/ingest", requireOps, async (req, res) => {
@@ -54,7 +66,7 @@ app.post("/rag/ingest", requireOps, async (req, res) => {
     const hasText = typeof text === "string" && text.trim().length > 0;
     const hasMeta = typeof metadata === "string" && metadata.trim().length > 0;
     if (!hasText && !hasMeta) {
-      res.status(400).json({ ok: false, message: "text 与 metadata 至少填一项" });
+      res.status(400).json({ ok: false, message: "Provide at least one of text or metadata" });
       return;
     }
 
@@ -67,27 +79,27 @@ app.post("/rag/ingest", requireOps, async (req, res) => {
       ok: true,
       recordIndex,
       recordId,
-      message: "已写入 DynamoDB",
+      message: "Saved to Azure SQL",
     });
   } catch (err) {
     console.error(err);
     res.status(500).json({
       ok: false,
-      message: err instanceof Error ? err.message : "服务器错误",
+      message: err instanceof Error ? err.message : "Server error",
     });
   }
 });
 
-/** 占位：接好模型与向量库后在此替换 */
+/** Placeholder: replace with model + vector retrieval when ready. */
 app.post("/rag/assess", requireOps, (_req, res) => {
   res.json({
     risk: "low",
-    reason: "（占位）服务端尚未接 RAG/模型，请替换 /rag/assess 实现。",
+    reason: "Placeholder: replace /rag/assess with your RAG / model pipeline.",
     similarRecords: [],
   });
 });
 
 app.listen(PORT, () => {
-  console.log(`Risk ingest API 监听 http://localhost:${PORT}`);
-  console.log(`DynamoDB 表: ${TABLE_NAME} 区域: ${AWS_REGION}`);
+  console.log(`Risk ingest API listening on http://localhost:${PORT}`);
+  console.log(`Azure SQL: ${sqlConfig.server} / ${sqlConfig.database}`);
 });

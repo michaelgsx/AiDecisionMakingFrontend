@@ -16,7 +16,7 @@ function newRow(): ExtraRow {
 }
 
 type Props = {
-  /** 合并后的 JSON 字符串，供提交 metadata */
+  /** Merged JSON string emitted for the request `metadata` field. */
   onFeaturesJsonChange: (json: string) => void;
 };
 

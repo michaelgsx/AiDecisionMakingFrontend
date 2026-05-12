@@ -1,14 +1,14 @@
-/** 与后端约定：可按你实际 API 改字段名 */
+/** API contract with your backend; rename fields if your API differs. */
 export type IngestPayload = {
-  /** 人工可读补充（案件描述、备注等，可选） */
+  /** Optional human-readable narrative (case notes, etc.). */
   text?: string;
-  /** 风控多特征合并后的 JSON 字符串 */
+  /** Merged risk features as a JSON string. */
   metadata?: string;
 };
 
 export type IngestResponse = {
   ok: boolean;
-  /** 第几条记录（从 1 起或按你后端语义） */
+  /** Record ordinal (1-based or per your backend semantics). */
   recordIndex?: number;
   recordId?: string;
   message?: string;
@@ -16,7 +16,7 @@ export type IngestResponse = {
 
 export type AssessPayload = {
   text?: string;
-  /** 与写入页相同结构的特征 JSON 字符串 */
+  /** Same feature JSON shape as the ingest page. */
   metadata?: string;
 };
 

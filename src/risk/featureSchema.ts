@@ -1,4 +1,4 @@
-/** 常用核心字段（snake_case 便于与日志 / DB 对齐） */
+/** Core fields (snake_case to align with logs / DB). */
 export const CORE_FEATURE_KEYS = [
   "scenario",
   "transaction_id",
@@ -29,7 +29,7 @@ export const CORE_LABELS: Record<CoreFeatureKey, string> = {
   timestamp: "事件时间戳",
 };
 
-/** 扩展字段：可按需填写，空则不入库 JSON */
+/** Optional extended fields; empty values are omitted from the JSON payload. */
 export const EXTENDED_FEATURE_KEYS = [
   "ip_address",
   "user_agent",
@@ -66,7 +66,7 @@ export const EXTENDED_LABELS: Record<ExtendedFeatureKey, string> = {
   device_fingerprint: "设备指纹摘要",
 };
 
-/** 以这些后缀/典型字段结尾的键，在值为纯数字时写入 JSON 为 number */
+/** Keys matching these suffixes (or listed names) coerce numeric strings to JSON numbers. */
 const NUMERIC_KEY =
   /(_amount|_count|_km|_days|_24h)$|^(withdraw_amount|total_amount|deposit_amount)$/;
 
