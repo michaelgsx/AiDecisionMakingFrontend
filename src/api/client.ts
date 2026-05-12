@@ -59,7 +59,7 @@ export async function ingestRecord(
     throw new Error(data.message ?? `HTTP ${res.status}`);
   }
   /** Treat as success if the backend omits `ok` but returns HTTP 200. */
-  return { ok: data.ok !== false, ...data };
+  return { ...data, ok: data.ok !== false };
 }
 
 /** POST /rag/assess; override `assessPath` if your backend uses a different route. */
