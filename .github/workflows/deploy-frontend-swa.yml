@@ -16,15 +16,6 @@ on:
   workflow_dispatch:
   push:
     branches: [main, v1]
-    paths:
-      - "src/**"
-      - "index.html"
-      - "vite.config.ts"
-      - "package.json"
-      - "package-lock.json"
-      - "tsconfig.json"
-      - "staticwebapp.config.json"
-      - ".github/workflows/deploy-frontend-swa.yml"
   pull_request:
     types: [opened, synchronize, reopened, closed]
     branches: [main, v1]
