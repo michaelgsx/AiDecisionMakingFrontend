@@ -14,11 +14,12 @@
 #       sets allow-no-subscriptions: true on Azure login.
 #     Paste into GitHub secret AZURE_CREDENTIALS.
 #
-# Repository variables (Settings → Secrets and variables → Actions → Variables):
+# Repository variable OR secret (same name; use Variables tab OR Secrets tab):
 #   AZURE_KEYVAULT_NAME
-#     Name of the vault only (not URI), e.g. ai-rag-key
+#     Vault name only (not URI), e.g. ai-rag-key
+#     If you put it under Secrets, the workflow still picks it up.
 #
-# Optional repository variable:
+# Optional repository variable OR secret:
 #   KEYVAULT_SECRET_NAME
 #     Defaults to webapp-deployment-token if unset.
 #
@@ -68,12 +69,15 @@ jobs:
       - name: Fetch Static Web Apps deployment token from Key Vault
         run: |
           set -euo pipefail
-          VAULT="${{ vars.AZURE_KEYVAULT_NAME }}"
+          VAULT='${{ vars.AZURE_KEYVAULT_NAME }}'
+          if [ -z "$VAULT" ]; then VAULT='${{ secrets.AZURE_KEYVAULT_NAME }}'; fi
           if [ -z "$VAULT" ]; then
-            echo "Set repository variable AZURE_KEYVAULT_NAME to your Key Vault name (e.g. ai-rag-key)." >&2
+            echo "Set AZURE_KEYVAULT_NAME in GitHub: Settings → Secrets and variables → Actions →" >&2
+            echo "  Variables (recommended) OR Secrets — name exactly AZURE_KEYVAULT_NAME, e.g. ai-rag-key" >&2
             exit 1
           fi
           SECRET_NAME='${{ vars.KEYVAULT_SECRET_NAME }}'
+          if [ -z "$SECRET_NAME" ]; then SECRET_NAME='${{ secrets.KEYVAULT_SECRET_NAME }}'; fi
           if [ -z "$SECRET_NAME" ]; then SECRET_NAME="webapp-deployment-token"; fi
           TOKEN=$(az keyvault secret show \
             --vault-name "$VAULT" \
@@ -112,12 +116,14 @@ jobs:
       - name: Fetch Static Web Apps deployment token from Key Vault
         run: |
           set -euo pipefail
-          VAULT="${{ vars.AZURE_KEYVAULT_NAME }}"
+          VAULT='${{ vars.AZURE_KEYVAULT_NAME }}'
+          if [ -z "$VAULT" ]; then VAULT='${{ secrets.AZURE_KEYVAULT_NAME }}'; fi
           if [ -z "$VAULT" ]; then
-            echo "Set repository variable AZURE_KEYVAULT_NAME." >&2
+            echo "Set AZURE_KEYVAULT_NAME (Variable or Secret) to your vault name, e.g. ai-rag-key." >&2
             exit 1
           fi
           SECRET_NAME='${{ vars.KEYVAULT_SECRET_NAME }}'
+          if [ -z "$SECRET_NAME" ]; then SECRET_NAME='${{ secrets.KEYVAULT_SECRET_NAME }}'; fi
           if [ -z "$SECRET_NAME" ]; then SECRET_NAME="webapp-deployment-token"; fi
           TOKEN=$(az keyvault secret show \
             --vault-name "$VAULT" \
