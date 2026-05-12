@@ -1,10 +1,13 @@
 {
   "navigationFallback": {
     "rewrite": "/index.html",
-    "exclude": ["/assets/*", "/*.{ico,png,svg,woff2}"]
+    "exclude": ["/assets/*", "/assets/**", "/*.{ico,png,svg,woff2,js,css,map}"]
   },
   "mimeTypes": {
-    ".json": "application/json"
+    ".json": "application/json",
+    ".js": "application/javascript",
+    ".mjs": "application/javascript",
+    ".css": "text/css"
   },
   "globalHeaders": {
     "X-Content-Type-Options": "nosniff",
