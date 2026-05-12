@@ -1,0 +1,46 @@
+# Azure DevOps — build and deploy the Vite SPA to Azure Static Web Apps.
+#
+# New pipeline: Pipelines → New → Azure Repos Git → this repo →
+#   "Existing Azure Pipelines YAML file" → /azure-pipelines.yml
+#
+# Pipeline variables (secret where noted):
+#   AZURE_STATIC_WEB_APPS_API_TOKEN  (secret) — Static Web App → Manage deployment token
+#   VITE_API_BASE_URL                — https://your-api.azurewebsites.net (no trailing slash)
+#   VITE_OPS_TOKEN                   (optional secret)
+#   VITE_USE_MOCK                    (optional; true = mock only)
+#
+# If task AzureStaticWebApp@0 is unknown, install Marketplace: "Azure Static Web Apps".
+
+trigger:
+  branches:
+    include:
+      - main
+      - v1
+
+pool:
+  vmImage: ubuntu-latest
+
+variables:
+  NODE_VERSION: "20.x"
+
+steps:
+  - task: NodeTool@0
+    inputs:
+      versionSpec: $(NODE_VERSION)
+
+  - script: npm install && npm run build
+    displayName: npm install and build
+    env:
+      VITE_API_BASE_URL: $(VITE_API_BASE_URL)
+      VITE_OPS_TOKEN: $(VITE_OPS_TOKEN)
+      VITE_USE_MOCK: $(VITE_USE_MOCK)
+
+  - task: AzureStaticWebApp@0
+    displayName: Deploy to Azure Static Web Apps
+    inputs:
+      workingDirectory: $(Build.SourcesDirectory)
+      app_location: /
+      api_location: ""
+      output_location: dist
+      skip_app_build: true
+      azure_static_web_apps_api_token: $(AZURE_STATIC_WEB_APPS_API_TOKEN)

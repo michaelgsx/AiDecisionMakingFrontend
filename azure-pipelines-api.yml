@@ -1,0 +1,50 @@
+# Azure DevOps — deploy server/ (Node API) to Azure App Service (Linux).
+#
+# New pipeline: Pipelines → New → Existing YAML → /azure-pipelines-api.yml
+#
+# Prerequisites:
+#   - Web App created (Linux, Node 20), Application settings for Azure SQL (see server/.env.example).
+#   - Service connection: Project settings → Service connections → Azure Resource Manager.
+#
+# Pipeline variables:
+#   AZURE_SUBSCRIPTION        — exact name of the ARM service connection (not subscription GUID).
+#   AZURE_WEBAPP_API_NAME     — Web App name (https://NAME.azurewebsites.net).
+
+trigger:
+  branches:
+    include:
+      - main
+      - v1
+  paths:
+    include:
+      - server/*
+
+pool:
+  vmImage: ubuntu-latest
+
+variables:
+  NODE_VERSION: "20.x"
+
+steps:
+  - task: NodeTool@0
+    inputs:
+      versionSpec: $(NODE_VERSION)
+
+  - script: cd server && npm install --omit=dev
+    displayName: npm install server (production)
+
+  - task: ArchiveFiles@2
+    displayName: Zip server folder
+    inputs:
+      rootFolderOrFile: "$(Build.SourcesDirectory)/server"
+      includeRootFolder: false
+      archiveType: zip
+      archiveFile: "$(Build.ArtifactStagingDirectory)/api.zip"
+      replaceExistingArchive: true
+
+  - task: AzureWebApp@1
+    displayName: Deploy to Azure Web App
+    inputs:
+      azureSubscription: $(AZURE_SUBSCRIPTION)
+      appName: $(AZURE_WEBAPP_API_NAME)
+      package: $(Build.ArtifactStagingDirectory)/api.zip
