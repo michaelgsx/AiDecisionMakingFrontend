@@ -5,12 +5,14 @@
 #
 # Secrets (required):
 #   AZURE_CREDENTIALS
-#     JSON: clientId, clientSecret, subscriptionId, tenantId.
+#     JSON: clientId, clientSecret, tenantId, and optionally subscriptionId.
 #     Grant the app "Key Vault Secrets User" on the vault (IAM on the Key Vault resource).
-#     If login fails with "No subscriptions found", either:
-#       (a) assign the app "Reader" (minimum) on subscription scope, or
-#       (b) this workflow sets allow-no-subscriptions: true on Azure login (may be enough for Key Vault only).
-#     Paste the JSON into GitHub secret AZURE_CREDENTIALS.
+#     If login fails with "subscription doesn't exist" while your user is Owner:
+#       the SERVICE PRINCIPAL is not the same as your user — assign the app "Reader"
+#       on subscription ai_rag_subscription (IAM at subscription scope), then retry.
+#     Alternatively omit "subscriptionId" from the JSON (Key Vault–only); this workflow
+#       sets allow-no-subscriptions: true on Azure login.
+#     Paste into GitHub secret AZURE_CREDENTIALS.
 #
 # Repository variables (Settings → Secrets and variables → Actions → Variables):
 #   AZURE_KEYVAULT_NAME
