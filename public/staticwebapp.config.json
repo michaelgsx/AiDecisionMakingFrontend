@@ -1,12 +1,32 @@
 {
+  "routes": [
+    {
+      "route": "/assets/*.js",
+      "headers": {
+        "Content-Type": "text/javascript; charset=utf-8"
+      }
+    },
+    {
+      "route": "/assets/*.mjs",
+      "headers": {
+        "Content-Type": "text/javascript; charset=utf-8"
+      }
+    },
+    {
+      "route": "/assets/*.css",
+      "headers": {
+        "Content-Type": "text/css; charset=utf-8"
+      }
+    }
+  ],
   "navigationFallback": {
     "rewrite": "/index.html",
     "exclude": ["/assets/*"]
   },
   "mimeTypes": {
     ".json": "application/json",
-    ".js": "application/javascript",
-    ".mjs": "application/javascript",
+    ".js": "text/javascript",
+    ".mjs": "text/javascript",
     ".css": "text/css"
   },
   "globalHeaders": {

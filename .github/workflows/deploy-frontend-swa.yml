@@ -104,15 +104,18 @@ jobs:
           echo "::add-mask::$TOKEN"
           echo "SWA_DEPLOYMENT_TOKEN=$TOKEN" >> "$GITHUB_ENV"
 
+      # skip_app_build: true — per MS docs, app_location must be the folder to deploy
+      # and output_location must be empty (not repo root + "dist").
+      # https://learn.microsoft.com/en-us/azure/static-web-apps/build-configuration
       - name: Deploy to Azure Static Web Apps
         uses: Azure/static-web-apps-deploy@v1
         with:
           azure_static_web_apps_api_token: ${{ env.SWA_DEPLOYMENT_TOKEN }}
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           action: upload
-          app_location: /
+          app_location: dist
           api_location: ""
-          output_location: dist
+          output_location: ""
           skip_app_build: true
 
   close_pr_environment:
