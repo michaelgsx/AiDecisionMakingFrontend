@@ -1,6 +1,7 @@
 import { useCallback, useState } from "react";
 import { assessRecord } from "../api/client";
 import { RiskFeaturesPanel } from "../components/RiskFeaturesPanel";
+import { randomNarrative } from "../risk/randomFill";
 import type { AssessResponse } from "../types/api";
 
 function parseFeatureKeys(metadata: string): string[] {
@@ -13,7 +14,7 @@ function parseFeatureKeys(metadata: string): string[] {
 }
 
 export function AssessPage() {
-  const [narrative, setNarrative] = useState("");
+  const [narrative, setNarrative] = useState(randomNarrative);
   const [featuresJson, setFeaturesJson] = useState("{}");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);

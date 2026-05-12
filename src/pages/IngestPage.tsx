@@ -1,6 +1,7 @@
 import { useCallback, useState } from "react";
 import { ingestRecord } from "../api/client";
 import { RiskFeaturesPanel } from "../components/RiskFeaturesPanel";
+import { randomNarrative } from "../risk/randomFill";
 
 function parseFeatureKeys(metadata: string): string[] {
   try {
@@ -12,7 +13,7 @@ function parseFeatureKeys(metadata: string): string[] {
 }
 
 export function IngestPage() {
-  const [narrative, setNarrative] = useState("");
+  const [narrative, setNarrative] = useState(randomNarrative);
   const [featuresJson, setFeaturesJson] = useState("{}");
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<{ ok: true; msg: string } | { ok: false; msg: string } | null>(
@@ -48,7 +49,7 @@ export function IngestPage() {
           ok: true,
           msg: [res.message, idx].filter(Boolean).join(" · "),
         });
-        setNarrative("");
+        setNarrative(randomNarrative());
       } else {
         setResult({ ok: false, msg: res.message ?? "写入失败" });
       }

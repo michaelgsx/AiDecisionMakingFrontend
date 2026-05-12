@@ -8,6 +8,7 @@ import {
   type CoreFeatureKey,
   type ExtendedFeatureKey,
 } from "../risk/featureSchema";
+import { randomExtraRows, randomRiskCoreValues, randomRiskExtendedValues } from "../risk/randomFill";
 
 type ExtraRow = { id: string; key: string; value: string };
 
@@ -25,6 +26,12 @@ export function RiskFeaturesPanel({ onFeaturesJsonChange }: Props) {
   const [core, setCore] = useState<Partial<Record<CoreFeatureKey, string>>>({});
   const [extended, setExtended] = useState<Partial<Record<ExtendedFeatureKey, string>>>({});
   const [extras, setExtras] = useState<ExtraRow[]>([]);
+
+  useEffect(() => {
+    setCore(randomRiskCoreValues());
+    setExtended(randomRiskExtendedValues());
+    setExtras(randomExtraRows());
+  }, []);
 
   const object = useMemo(
     () => buildFeaturesObject(core, extended, extras),
