@@ -17,7 +17,8 @@
 # Repository variable OR secret (same name; use Variables tab OR Secrets tab):
 #   AZURE_KEYVAULT_NAME
 #     Vault name only (not URI), e.g. ai-rag-key
-#     If you put it under Secrets, the workflow still picks it up.
+#     If Variables/Secrets are empty (e.g. fork PR), workflow falls back to default vault name
+#     ai-rag-key or workflow_dispatch input keyvault_name.
 #
 # Optional repository variable OR secret:
 #   KEYVAULT_SECRET_NAME
@@ -32,6 +33,12 @@ name: Deploy frontend (Azure Static Web Apps)
 
 on:
   workflow_dispatch:
+    inputs:
+      keyvault_name:
+        description: "Azure Key Vault name (used if repo Variable/Secret AZURE_KEYVAULT_NAME is empty)"
+        required: false
+        type: string
+        default: ai-rag-key
   push:
     branches: [main, v1]
   pull_request:
@@ -71,10 +78,12 @@ jobs:
           set -euo pipefail
           VAULT='${{ vars.AZURE_KEYVAULT_NAME }}'
           if [ -z "$VAULT" ]; then VAULT='${{ secrets.AZURE_KEYVAULT_NAME }}'; fi
+          if [ -z "$VAULT" ] && [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            VAULT='${{ github.event.inputs.keyvault_name }}'
+          fi
           if [ -z "$VAULT" ]; then
-            echo "Set AZURE_KEYVAULT_NAME in GitHub: Settings → Secrets and variables → Actions →" >&2
-            echo "  Variables (recommended) OR Secrets — name exactly AZURE_KEYVAULT_NAME, e.g. ai-rag-key" >&2
-            exit 1
+            VAULT="ai-rag-key"
+            echo "::warning::AZURE_KEYVAULT_NAME not set in repo Variables/Secrets; using default vault name ai-rag-key. Add Variable AZURE_KEYVAULT_NAME to avoid this." >&2
           fi
           SECRET_NAME='${{ vars.KEYVAULT_SECRET_NAME }}'
           if [ -z "$SECRET_NAME" ]; then SECRET_NAME='${{ secrets.KEYVAULT_SECRET_NAME }}'; fi
@@ -118,9 +127,12 @@ jobs:
           set -euo pipefail
           VAULT='${{ vars.AZURE_KEYVAULT_NAME }}'
           if [ -z "$VAULT" ]; then VAULT='${{ secrets.AZURE_KEYVAULT_NAME }}'; fi
+          if [ -z "$VAULT" ] && [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            VAULT='${{ github.event.inputs.keyvault_name }}'
+          fi
           if [ -z "$VAULT" ]; then
-            echo "Set AZURE_KEYVAULT_NAME (Variable or Secret) to your vault name, e.g. ai-rag-key." >&2
-            exit 1
+            VAULT="ai-rag-key"
+            echo "::warning::AZURE_KEYVAULT_NAME not set; using default ai-rag-key for PR close job." >&2
           fi
           SECRET_NAME='${{ vars.KEYVAULT_SECRET_NAME }}'
           if [ -z "$SECRET_NAME" ]; then SECRET_NAME='${{ secrets.KEYVAULT_SECRET_NAME }}'; fi
