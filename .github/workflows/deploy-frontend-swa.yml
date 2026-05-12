@@ -5,14 +5,10 @@
 #
 # Secrets (required):
 #   AZURE_CREDENTIALS
-#     JSON: clientId, clientSecret, tenantId, and optionally subscriptionId.
-#     Grant the app "Key Vault Secrets User" on the vault (IAM on the Key Vault resource).
-#     If login fails with "subscription doesn't exist" while your user is Owner:
-#       the SERVICE PRINCIPAL is not the same as your user — assign the app "Reader"
-#       on subscription ai_rag_subscription (IAM at subscription scope), then retry.
-#     Alternatively omit "subscriptionId" from the JSON (Key Vault–only); this workflow
-#       sets allow-no-subscriptions: true on Azure login.
-#     Paste into GitHub secret AZURE_CREDENTIALS.
+#     JSON: clientId, clientSecret, tenantId (subscriptionId optional — ignored by login step).
+#     Login uses Azure CLI with --allow-no-subscriptions so Key Vault works even if the SP
+#     has no subscription RBAC (subscriptionId in JSON no longer breaks login).
+#     Grant the same app "Key Vault Secrets User" on the vault (IAM on the Key Vault resource).
 #
 # Repository variable OR secret (same name; use Variables tab OR Secrets tab):
 #   AZURE_KEYVAULT_NAME
@@ -67,11 +63,20 @@ jobs:
           VITE_OPS_TOKEN: ${{ secrets.VITE_OPS_TOKEN }}
           VITE_USE_MOCK: ${{ secrets.VITE_USE_MOCK }}
 
-      - name: Azure login
-        uses: azure/login@v2
-        with:
-          creds: ${{ secrets.AZURE_CREDENTIALS }}
-          allow-no-subscriptions: true
+      - name: Azure CLI login (service principal, Key Vault–friendly)
+        env:
+          AZURE_CREDENTIALS: ${{ secrets.AZURE_CREDENTIALS }}
+        run: |
+          set -euo pipefail
+          command -v jq >/dev/null
+          TID=$(jq -r .tenantId <<<"$AZURE_CREDENTIALS")
+          CID=$(jq -r .clientId <<<"$AZURE_CREDENTIALS")
+          SEC=$(jq -r .clientSecret <<<"$AZURE_CREDENTIALS")
+          if [ -z "$TID" ] || [ "$TID" = "null" ] || [ -z "$CID" ] || [ "$CID" = "null" ] || [ -z "$SEC" ] || [ "$SEC" = "null" ]; then
+            echo "AZURE_CREDENTIALS must be JSON with tenantId, clientId, clientSecret." >&2
+            exit 1
+          fi
+          az login --service-principal -u "$CID" -p "$SEC" --tenant "$TID" --allow-no-subscriptions
 
       - name: Fetch Static Web Apps deployment token from Key Vault
         run: |
@@ -116,11 +121,20 @@ jobs:
     permissions:
       contents: read
     steps:
-      - name: Azure login
-        uses: azure/login@v2
-        with:
-          creds: ${{ secrets.AZURE_CREDENTIALS }}
-          allow-no-subscriptions: true
+      - name: Azure CLI login (service principal, Key Vault–friendly)
+        env:
+          AZURE_CREDENTIALS: ${{ secrets.AZURE_CREDENTIALS }}
+        run: |
+          set -euo pipefail
+          command -v jq >/dev/null
+          TID=$(jq -r .tenantId <<<"$AZURE_CREDENTIALS")
+          CID=$(jq -r .clientId <<<"$AZURE_CREDENTIALS")
+          SEC=$(jq -r .clientSecret <<<"$AZURE_CREDENTIALS")
+          if [ -z "$TID" ] || [ "$TID" = "null" ] || [ -z "$CID" ] || [ "$CID" = "null" ] || [ -z "$SEC" ] || [ "$SEC" = "null" ]; then
+            echo "AZURE_CREDENTIALS must be JSON with tenantId, clientId, clientSecret." >&2
+            exit 1
+          fi
+          az login --service-principal -u "$CID" -p "$SEC" --tenant "$TID" --allow-no-subscriptions
 
       - name: Fetch Static Web Apps deployment token from Key Vault
         run: |
