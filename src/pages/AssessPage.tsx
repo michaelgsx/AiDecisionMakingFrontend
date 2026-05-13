@@ -30,7 +30,7 @@ export function AssessPage() {
     setData(null);
     const keys = parseFeatureKeys(featuresJson);
     if (!narrative.trim() && keys.length === 0) {
-      setError("请至少填写「案件备注」或一条风控特征。");
+      setError("Please fill in at least one of Case Notes or a risk feature.");
       return;
     }
     setLoading(true);
@@ -41,44 +41,46 @@ export function AssessPage() {
       });
       setData(res);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "请求失败");
+      setError(err instanceof Error ? err.message : "Request failed");
     } finally {
       setLoading(false);
     }
   }
 
-  const riskLabel = data?.risk === "high" ? "高风险" : data?.risk === "low" ? "低风险" : "";
+  const riskLabel = data?.risk === "high" ? "High Risk" : data?.risk === "low" ? "Low Risk" : "";
 
   return (
     <>
-      <h1>风险与相似记录</h1>
-      <p className="lead">与写入页使用同一套特征表单，便于与向量库中的记录对齐比较。</p>
+      <h1>Risk &amp; Similar Records</h1>
+      <p className="lead">
+        Uses the same feature form as the Ingest page for alignment with vector store records.
+      </p>
 
       <div className="card">
         <form onSubmit={onSubmit}>
           <RiskFeaturesPanel onFeaturesJsonChange={onFeaturesJsonChange} />
 
           <div className="field" style={{ marginTop: "0.5rem" }}>
-            <label htmlFor="assess-narrative">案件备注（可选）</label>
+            <label htmlFor="assess-narrative">Case Notes (optional)</label>
             <textarea
               id="assess-narrative"
               value={narrative}
               onChange={(e) => setNarrative(e.target.value)}
-              placeholder="与写入时相同类型的补充说明…"
+              placeholder="Same type of supplementary notes as the Ingest page..."
               rows={5}
             />
           </div>
 
           <div className="actions">
             <button type="submit" disabled={loading}>
-              {loading ? "分析中…" : "提交分析"}
+              {loading ? "Analyzing..." : "Submit Analysis"}
             </button>
           </div>
         </form>
 
         {error && (
           <div className="result err" role="alert">
-            错误：{error}
+            Error: {error}
           </div>
         )}
 
@@ -88,12 +90,12 @@ export function AssessPage() {
               <span className={`risk-pill ${data.risk}`}>{riskLabel}</span>
             </div>
             <div>
-              <strong style={{ color: "var(--text)" }}>理由</strong>
+              <strong style={{ color: "var(--text)" }}>Reason</strong>
               <p style={{ margin: "0.35rem 0 0", color: "var(--muted)" }}>{data.reason}</p>
             </div>
             {data.similarRecords?.length > 0 && (
               <div style={{ marginTop: "1rem" }}>
-                <strong style={{ color: "var(--text)" }}>相似记录举例</strong>
+                <strong style={{ color: "var(--text)" }}>Similar Records</strong>
                 <ul className="similar-list">
                   {data.similarRecords.map((r, i) => (
                     <li key={r.id ?? i}>
@@ -102,7 +104,7 @@ export function AssessPage() {
                         {r.score != null && (
                           <>
                             {r.id != null && " · "}
-                            相似度: {r.score.toFixed?.(3) ?? r.score}
+                            Similarity: {r.score.toFixed?.(3) ?? r.score}
                           </>
                         )}
                       </div>
@@ -117,11 +119,9 @@ export function AssessPage() {
       </div>
 
       <footer className="config-hint">
-        后端需返回 JSON，例如{" "}
-        <code>
-          {`{ "risk": "high"|"low", "reason": "...", "similarRecords": [{ "id":"", "snippet":"", "score":0.9 }] }`}
-        </code>
-        。默认请求 <code>POST {`{VITE_API_BASE_URL}/rag/assess`}</code>。
+        Java backend (Spring Boot) at{" "}
+        <code>{`{VITE_API_BASE_URL}`}/rag/assess</code>.
+        Response: <code>{`{ "risk": "high"|"low", "reason": "...", "similarRecords": [...] }`}</code>.
       </footer>
     </>
   );

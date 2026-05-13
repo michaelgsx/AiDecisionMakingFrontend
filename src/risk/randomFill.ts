@@ -54,6 +54,18 @@ export function randomRiskExtendedValues(): Record<ExtendedFeatureKey, string> {
     beneficiary_changed: tf(),
     failed_login_count_24h: String(Math.floor(Math.random() * 8)),
     device_fingerprint: randId("fp"),
+    email_trace: pick([
+      "From: support@bank.com To: user@example.com\nSubject: Unusual activity on your account\nWe noticed a login from a new device. If this wasn't you, please reset your password.",
+      "From: user@example.com To: cs@payments.com\nSubject: Where is my refund?\nI requested a refund 5 days ago but haven't received it. Order #38291.",
+      "From: alerts@finserv.com To: user@example.com\nSubject: Wire transfer confirmation\nA wire of $12,500 was initiated from your account to IBAN DE89... Please confirm.",
+      "From: compliance@finserv.com To: user@example.com\nSubject: Document verification required\nYour recent large transaction requires additional KYC documentation. Please upload a government ID within 48 hours.",
+    ]),
+    conversation_trace: pick([
+      "Agent: How can I help you today?\nUser: I need to increase my withdrawal limit.\nAgent: I can help with that. Can you verify your identity?\nUser: Sure, my DOB is 1990-03-15.\nAgent: Limit increased to $50,000.",
+      "User: I didn't authorize the $8,000 transfer.\nAgent: Let me check. The transfer was initiated from IP 203.0.113.42 at 02:14 UTC.\nUser: That's not my IP. Please freeze my account.\nAgent: Account frozen. A dispute case has been opened.",
+      "Agent: Your account shows 3 failed login attempts in the last hour.\nUser: That wasn't me. Someone might have my credentials.\nAgent: I've enabled a temporary lock. Please change your password via the secure link sent to your email.",
+      "User: Why was my card declined?\nAgent: There was a fraud flag on a $3,200 purchase at electronics-store.com from an IP in a different country.\nUser: That was actually me, I'm traveling.\nAgent: Got it. I've whitelisted the merchant and lifted the hold.",
+    ]),
   };
 }
 

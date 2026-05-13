@@ -1,9 +1,14 @@
+/** Ops decision when persisting a case row (stored inside merged `metadata` JSON on the server). */
+export type IngestReviewOutcome = "passed" | "rejected" | "frozen";
+
 /** API contract with your backend; rename fields if your API differs. */
 export type IngestPayload = {
   /** Optional human-readable narrative (case notes, etc.). */
   text?: string;
   /** Merged risk features as a JSON string. */
   metadata?: string;
+  /** Required for ingest: Pass / Reject / Freeze → passed | rejected | frozen. */
+  reviewOutcome: IngestReviewOutcome;
 };
 
 export type IngestResponse = {

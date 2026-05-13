@@ -3,6 +3,7 @@ import type {
   AssessResponse,
   IngestPayload,
   IngestResponse,
+  IngestReviewOutcome,
 } from "../types/api";
 
 function baseUrl(): string {
@@ -27,7 +28,7 @@ async function parseJson<T>(res: Response): Promise<T> {
   try {
     return JSON.parse(text) as T;
   } catch {
-    throw new Error("响应不是合法 JSON");
+    throw new Error("Response is not valid JSON");
   }
 }
 
@@ -39,14 +40,19 @@ export async function ingestRecord(
   const root = baseUrl();
   if (!root && useMock()) {
     await new Promise((r) => setTimeout(r, 400));
+    const label: Record<IngestReviewOutcome, string> = {
+      passed: "Passed",
+      rejected: "Rejected",
+      frozen: "Frozen",
+    };
     return {
       ok: true,
       recordIndex: Math.floor(Math.random() * 900) + 100,
-      message: "（Mock）已写入",
+      message: `(Mock) Saved · ${label[body.reviewOutcome]}`,
     };
   }
   if (!root) {
-    throw new Error("请配置 VITE_API_BASE_URL，或设置 VITE_USE_MOCK=true 演示");
+    throw new Error("Set VITE_API_BASE_URL or enable VITE_USE_MOCK=true for demo mode");
   }
 
   const res = await fetch(`${root}${ingestPath}`, {
@@ -54,11 +60,10 @@ export async function ingestRecord(
     headers: opsHeaders(),
     body: JSON.stringify(body),
   });
-  const data = await parseJson<IngestResponse>(res);
+  const data = await parseJson<IngestResponse & { error?: string }>(res);
   if (!res.ok) {
-    throw new Error(data.message ?? `HTTP ${res.status}`);
+    throw new Error(data.message ?? data.error ?? `HTTP ${res.status}`);
   }
-  /** Treat as success if the backend omits `ok` but returns HTTP 200. */
   return { ...data, ok: data.ok !== false };
 }
 
@@ -75,16 +80,16 @@ export async function assessRecord(
       risk: len > 120 ? "high" : "low",
       reason:
         len > 120
-          ? "（Mock）综合文本+特征 JSON 较长，演示为高风险；真实环境由模型与规则决定。"
-          : "（Mock）输入较短，演示为低风险。",
+          ? "(Mock) Combined text + features JSON is long; demo returns high risk. Real results are model/rule-driven."
+          : "(Mock) Input is short; demo returns low risk.",
       similarRecords: [
-        { id: "mock-1", snippet: "与当前文本语义相近的示例片段 A…", score: 0.91 },
-        { id: "mock-2", snippet: "与当前文本语义相近的示例片段 B…", score: 0.84 },
+        { id: "mock-1", snippet: "Semantically similar sample snippet A...", score: 0.91 },
+        { id: "mock-2", snippet: "Semantically similar sample snippet B...", score: 0.84 },
       ],
     };
   }
   if (!root) {
-    throw new Error("请配置 VITE_API_BASE_URL，或设置 VITE_USE_MOCK=true 演示");
+    throw new Error("Set VITE_API_BASE_URL or enable VITE_USE_MOCK=true for demo mode");
   }
 
   const res = await fetch(`${root}${assessPath}`, {
@@ -92,9 +97,9 @@ export async function assessRecord(
     headers: opsHeaders(),
     body: JSON.stringify(body),
   });
-  const data = await parseJson<AssessResponse>(res);
+  const data = await parseJson<AssessResponse & { error?: string; message?: string }>(res);
   if (!res.ok) {
-    throw new Error((data as { message?: string }).message ?? `HTTP ${res.status}`);
+    throw new Error(data.message ?? data.error ?? `HTTP ${res.status}`);
   }
   return data;
 }

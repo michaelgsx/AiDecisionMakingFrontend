@@ -16,17 +16,17 @@ export const CORE_FEATURE_KEYS = [
 export type CoreFeatureKey = (typeof CORE_FEATURE_KEYS)[number];
 
 export const CORE_LABELS: Record<CoreFeatureKey, string> = {
-  scenario: "场景 / 用例编号",
-  transaction_id: "交易 ID",
-  user_id: "用户 ID",
-  device_id: "设备 ID",
-  device_type: "设备类型",
-  login_time: "登录时间",
-  country_code: "国家/地区码",
-  withdraw_amount: "提现金额",
-  total_amount: "总金额 / 余额相关",
-  deposit_amount: "充值金额",
-  timestamp: "事件时间戳",
+  scenario: "Scenario / Use-Case ID",
+  transaction_id: "Transaction ID",
+  user_id: "User ID",
+  device_id: "Device ID",
+  device_type: "Device Type",
+  login_time: "Login Time",
+  country_code: "Country / Region Code",
+  withdraw_amount: "Withdrawal Amount",
+  total_amount: "Total Amount / Balance",
+  deposit_amount: "Deposit Amount",
+  timestamp: "Event Timestamp",
 };
 
 /** Optional extended fields; empty values are omitted from the JSON payload. */
@@ -45,26 +45,36 @@ export const EXTENDED_FEATURE_KEYS = [
   "beneficiary_changed",
   "failed_login_count_24h",
   "device_fingerprint",
+  "email_trace",
+  "conversation_trace",
 ] as const;
 
 export type ExtendedFeatureKey = (typeof EXTENDED_FEATURE_KEYS)[number];
 
 export const EXTENDED_LABELS: Record<ExtendedFeatureKey, string> = {
-  ip_address: "IP 地址",
+  ip_address: "IP Address",
   user_agent: "User-Agent",
-  merchant_id: "商户 ID",
-  payment_method: "支付方式",
-  currency: "币种",
-  channel: "渠道（web / app / api）",
-  mfa_passed: "是否通过 MFA（true/false）",
-  is_new_device: "是否新设备（true/false）",
-  account_age_days: "账户年龄（天）",
-  velocity_24h_txn_count: "近 24h 交易笔数",
-  geo_distance_km: "与常用地距离（km）",
-  beneficiary_changed: "收款方是否变更（true/false）",
-  failed_login_count_24h: "近 24h 登录失败次数",
-  device_fingerprint: "设备指纹摘要",
+  merchant_id: "Merchant ID",
+  payment_method: "Payment Method",
+  currency: "Currency",
+  channel: "Channel (web / app / api)",
+  mfa_passed: "MFA Passed (true/false)",
+  is_new_device: "New Device (true/false)",
+  account_age_days: "Account Age (days)",
+  velocity_24h_txn_count: "Txn Count in Last 24h",
+  geo_distance_km: "Distance from Usual Location (km)",
+  beneficiary_changed: "Beneficiary Changed (true/false)",
+  failed_login_count_24h: "Failed Logins in Last 24h",
+  device_fingerprint: "Device Fingerprint Hash",
+  email_trace: "Email Trace",
+  conversation_trace: "Online Conversation Trace",
 };
+
+/** Extended keys that should render as multiline textareas instead of single-line inputs. */
+export const MULTILINE_EXTENDED_KEYS: ReadonlySet<ExtendedFeatureKey> = new Set([
+  "email_trace",
+  "conversation_trace",
+]);
 
 /** Keys matching these suffixes (or listed names) coerce numeric strings to JSON numbers. */
 const NUMERIC_KEY =

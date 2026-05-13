@@ -249,6 +249,26 @@ input:focus {
   margin-top: 0.25rem;
 }
 
+.actions--review {
+  margin-top: 0.65rem;
+}
+
+button.btn-review {
+  min-width: 6.5rem;
+}
+
+button.btn-review--pass {
+  background: linear-gradient(180deg, #3d9a65 0%, #2d7a4f 100%);
+}
+
+button.btn-review--reject {
+  background: linear-gradient(180deg, #d65454 0%, #a83838 100%);
+}
+
+button.btn-review--freeze {
+  background: linear-gradient(180deg, #5b7a9e 0%, #415a78 100%);
+}
+
 button {
   font-family: var(--font);
   font-weight: 600;

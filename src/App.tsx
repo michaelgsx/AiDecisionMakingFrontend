@@ -5,12 +5,12 @@ export function App() {
     <div className="app-shell">
       <header>
         <div className="header-inner">
-          <div className="brand">AI RAG 控制台</div>
+          <div className="brand">AI RAG Console</div>
           <nav>
             <NavLink to="/" end>
-              写入数据
+              Ingest
             </NavLink>
-            <NavLink to="/assess">风险与相似检索</NavLink>
+            <NavLink to="/assess">Risk &amp; Similarity</NavLink>
           </nav>
         </div>
       </header>

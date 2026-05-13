@@ -2,6 +2,7 @@ import { useCallback, useState } from "react";
 import { ingestRecord } from "../api/client";
 import { RiskFeaturesPanel } from "../components/RiskFeaturesPanel";
 import { randomNarrative } from "../risk/randomFill";
+import type { IngestReviewOutcome } from "../types/api";
 
 function parseFeatureKeys(metadata: string): string[] {
   try {
@@ -15,7 +16,7 @@ function parseFeatureKeys(metadata: string): string[] {
 export function IngestPage() {
   const [narrative, setNarrative] = useState(randomNarrative);
   const [featuresJson, setFeaturesJson] = useState("{}");
-  const [loading, setLoading] = useState(false);
+  const [submitting, setSubmitting] = useState<IngestReviewOutcome | null>(null);
   const [result, setResult] = useState<{ ok: true; msg: string } | { ok: false; msg: string } | null>(
     null,
   );
@@ -24,87 +25,120 @@ export function IngestPage() {
     setFeaturesJson(json);
   }, []);
 
-  async function onSubmit(e: React.FormEvent) {
-    e.preventDefault();
+  const outcomeLabel: Record<IngestReviewOutcome, string> = {
+    passed: "Passed",
+    rejected: "Rejected",
+    frozen: "Frozen",
+  };
+
+  async function submitWithOutcome(outcome: IngestReviewOutcome) {
     setResult(null);
     const keys = parseFeatureKeys(featuresJson);
     if (!narrative.trim() && keys.length === 0) {
-      setResult({ ok: false, msg: "请至少填写「案件备注」或一条风控特征。" });
+      setResult({ ok: false, msg: "Please fill in at least one of Case Notes or a risk feature." });
       return;
     }
-    setLoading(true);
+    setSubmitting(outcome);
     try {
       const res = await ingestRecord({
         text: narrative.trim() || undefined,
         metadata: featuresJson === "{}" ? undefined : featuresJson,
+        reviewOutcome: outcome,
       });
       if (res.ok) {
         const idx =
           res.recordIndex != null
-            ? `第 ${res.recordIndex} 条记录`
+            ? `Record #${res.recordIndex}`
             : res.recordId
-              ? `记录 ID：${res.recordId}`
-              : "写入成功";
+              ? `Record ID: ${res.recordId}`
+              : "Saved";
         setResult({
           ok: true,
-          msg: [res.message, idx].filter(Boolean).join(" · "),
+          msg: [`${outcomeLabel[outcome]}`, res.message, idx].filter(Boolean).join(" · "),
         });
         setNarrative(randomNarrative());
       } else {
-        setResult({ ok: false, msg: res.message ?? "写入失败" });
+        setResult({ ok: false, msg: res.message ?? "Save failed" });
       }
     } catch (err) {
       setResult({
         ok: false,
-        msg: err instanceof Error ? err.message : "请求失败",
+        msg: err instanceof Error ? err.message : "Request failed",
       });
     } finally {
-      setLoading(false);
+      setSubmitting(null);
     }
   }
 
   return (
     <>
-      <h1>写入云端库（Ops）</h1>
+      <h1>Ingest to Cloud Store (Ops)</h1>
       <p className="lead">
-        结构化风控特征会合并为一条 JSON 字符串写入 <code>metadata</code>；可选「案件备注」写入{" "}
-        <code>text</code>。请求头携带 Ops 鉴权。
+        Structured risk features are merged into a single JSON string for <code>metadata</code>;
+        optional Case Notes go into <code>text</code>. Choose <strong>Pass</strong>,{" "}
+        <strong>Reject</strong>, or <strong>Freeze</strong> to save the record; the server writes{" "}
+        <code>reviewOutcome</code> and a timestamp into <code>metadata</code>. Ops auth header required.
       </p>
 
       <div className="card">
-        <form onSubmit={onSubmit}>
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+          }}
+        >
           <RiskFeaturesPanel onFeaturesJsonChange={onFeaturesJsonChange} />
 
           <div className="field" style={{ marginTop: "0.5rem" }}>
-            <label htmlFor="ingest-narrative">案件备注（可选）</label>
+            <label htmlFor="ingest-narrative">Case Notes (optional)</label>
             <textarea
               id="ingest-narrative"
               value={narrative}
               onChange={(e) => setNarrative(e.target.value)}
-              placeholder="人工补充：异常说明、客户沟通摘要等，便于检索与 RAG…"
+              placeholder="Manual notes: anomaly description, customer communication summary, etc. for retrieval & RAG..."
               rows={5}
             />
           </div>
 
-          <div className="actions">
-            <button type="submit" disabled={loading}>
-              {loading ? "提交中…" : "提交写入"}
+          <div className="actions actions--review">
+            <button
+              type="button"
+              className="btn-review btn-review--pass"
+              disabled={submitting !== null}
+              onClick={() => void submitWithOutcome("passed")}
+            >
+              {submitting === "passed" ? "Saving..." : "Pass"}
+            </button>
+            <button
+              type="button"
+              className="btn-review btn-review--reject"
+              disabled={submitting !== null}
+              onClick={() => void submitWithOutcome("rejected")}
+            >
+              {submitting === "rejected" ? "Saving..." : "Reject"}
+            </button>
+            <button
+              type="button"
+              className="btn-review btn-review--freeze"
+              disabled={submitting !== null}
+              onClick={() => void submitWithOutcome("frozen")}
+            >
+              {submitting === "frozen" ? "Saving..." : "Freeze"}
             </button>
           </div>
         </form>
 
         {result && (
           <div className={`result ${result.ok ? "ok" : "err"}`} role="status">
-            {result.ok ? "成功" : "错误"}：{result.msg}
+            {result.ok ? "Success" : "Error"}: {result.msg}
           </div>
         )}
       </div>
 
       <footer className="config-hint">
-        后端需返回 JSON，例如{" "}
-        <code>{`{ "ok": true, "recordIndex": 42, "message": "..." }`}</code>
-        。默认请求 <code>POST {`{VITE_API_BASE_URL}/rag/ingest`}</code>，Header{" "}
-        <code>Authorization: Bearer &lt;VITE_OPS_TOKEN&gt;</code>。
+        Java backend (Spring Boot) at{" "}
+        <code>{`{VITE_API_BASE_URL}`}/rag/ingest</code>.
+        Request body: <code>{`{ "text?", "metadata?", "reviewOutcome": "passed"|"rejected"|"frozen" }`}</code>.
+        Auth: <code>Authorization: Bearer &lt;VITE_OPS_TOKEN&gt;</code>.
       </footer>
     </>
   );

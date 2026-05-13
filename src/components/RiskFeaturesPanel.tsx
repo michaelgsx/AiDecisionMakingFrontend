@@ -5,6 +5,7 @@ import {
   CORE_LABELS,
   EXTENDED_FEATURE_KEYS,
   EXTENDED_LABELS,
+  MULTILINE_EXTENDED_KEYS,
   type CoreFeatureKey,
   type ExtendedFeatureKey,
 } from "../risk/featureSchema";
@@ -54,13 +55,14 @@ export function RiskFeaturesPanel({ onFeaturesJsonChange }: Props) {
 
   return (
     <div className="risk-features">
-      <h2 className="risk-features__title">风控多特征（存为 JSON 字符串）</h2>
+      <h2 className="risk-features__title">Risk Features (stored as JSON)</h2>
       <p className="risk-features__hint">
-        下方字段会合并为单一 JSON，作为请求的 <code>metadata</code>；空字段不会写入 JSON。
+        Fields below are merged into a single JSON object for the request <code>metadata</code>;
+        empty fields are omitted.
       </p>
 
       <fieldset className="feature-fieldset">
-        <legend>核心字段</legend>
+        <legend>Core Fields</legend>
         <div className="feature-grid">
           {CORE_FEATURE_KEYS.map((k) => (
             <div className="field field--compact" key={k}>
@@ -78,9 +80,9 @@ export function RiskFeaturesPanel({ onFeaturesJsonChange }: Props) {
       </fieldset>
 
       <fieldset className="feature-fieldset">
-        <legend>常用扩展（可选）</legend>
+        <legend>Extended Fields (optional)</legend>
         <div className="feature-grid">
-          {EXTENDED_FEATURE_KEYS.map((k) => (
+          {EXTENDED_FEATURE_KEYS.filter((k) => !MULTILINE_EXTENDED_KEYS.has(k)).map((k) => (
             <div className="field field--compact" key={k}>
               <label htmlFor={`${formId}-ex-${k}`}>{EXTENDED_LABELS[k]}</label>
               <input
@@ -93,51 +95,64 @@ export function RiskFeaturesPanel({ onFeaturesJsonChange }: Props) {
             </div>
           ))}
         </div>
+        {EXTENDED_FEATURE_KEYS.filter((k) => MULTILINE_EXTENDED_KEYS.has(k)).map((k) => (
+          <div className="field field--compact" key={k} style={{ marginTop: "0.75rem" }}>
+            <label htmlFor={`${formId}-ex-${k}`}>{EXTENDED_LABELS[k]}</label>
+            <textarea
+              id={`${formId}-ex-${k}`}
+              value={extended[k] ?? ""}
+              onChange={(e) => setExtField(k, e.target.value)}
+              rows={4}
+              style={{ minHeight: "80px" }}
+            />
+          </div>
+        ))}
       </fieldset>
 
       <fieldset className="feature-fieldset">
-        <legend>自定义键值</legend>
+        <legend>Custom Key-Value Pairs</legend>
         <p className="risk-features__hint" style={{ marginTop: 0 }}>
-          任意业务字段；金额类键名若以 <code>_amount</code> 结尾且为数字，会存为数值类型。
+          Arbitrary business fields. Keys ending with <code>_amount</code> that contain a number
+          are stored as numeric values.
         </p>
         {extras.map((row, idx) => (
           <div className="extra-row" key={row.id}>
             <input
               type="text"
-              placeholder="字段名"
+              placeholder="Field name"
               value={row.key}
               onChange={(e) => {
                 const v = e.target.value;
                 setExtras((prev) => prev.map((r) => (r.id === row.id ? { ...r, key: v } : r)));
               }}
-              aria-label={`自定义字段名 ${idx + 1}`}
+              aria-label={`Custom field name ${idx + 1}`}
             />
             <input
               type="text"
-              placeholder="值"
+              placeholder="Value"
               value={row.value}
               onChange={(e) => {
                 const v = e.target.value;
                 setExtras((prev) => prev.map((r) => (r.id === row.id ? { ...r, value: v } : r)));
               }}
-              aria-label={`自定义字段值 ${idx + 1}`}
+              aria-label={`Custom field value ${idx + 1}`}
             />
             <button
               type="button"
               className="btn-secondary"
               onClick={() => setExtras((prev) => prev.filter((r) => r.id !== row.id))}
             >
-              删除
+              Remove
             </button>
           </div>
         ))}
         <button type="button" className="btn-secondary" onClick={() => setExtras((p) => [...p, newRow()])}>
-          添加一行
+          Add Row
         </button>
       </fieldset>
 
       <div className="field" style={{ marginTop: "1rem" }}>
-        <label>预览（将提交的 metadata JSON）</label>
+        <label>Preview (metadata JSON to be submitted)</label>
         <pre className="json-preview" tabIndex={0}>
           {json === "{}" ? "{}" : JSON.stringify(object, null, 2)}
         </pre>
