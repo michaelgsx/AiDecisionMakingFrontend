@@ -31,8 +31,15 @@ export type SimilarRecord = {
   score?: number;
 };
 
+/** Outcome label from the assess chat model (same vocabulary as ingest `reviewOutcome`). */
+export type AiAssessLabel = "passed" | "rejected" | "frozen";
+
 export type AssessResponse = {
-  risk: "high" | "low";
+  /** Heuristic from search scores, or driven by `aiLabel` when the chat step runs. */
+  risk: "high" | "low" | "medium";
   reason: string;
   similarRecords: SimilarRecord[];
+  /** Set when `AZURE_OPENAI_CHAT_DEPLOYMENT` is configured and the chat call succeeds. */
+  aiLabel?: AiAssessLabel | string | null;
+  aiReason?: string | null;
 };

@@ -47,13 +47,14 @@ export function AssessPage() {
     }
   }
 
-  const riskLabel = data?.risk === "high" ? "High Risk" : data?.risk === "low" ? "Low Risk" : "";
+  const riskLabel =
+    data?.risk === "high" ? "High Risk" : data?.risk === "medium" ? "Medium (frozen)" : data?.risk === "low" ? "Low Risk" : "";
 
   return (
     <>
       <h1>Risk &amp; Similar Records</h1>
       <p className="lead">
-        Uses the same feature form as the Ingest page for alignment with vector store records.
+        Similarity matches are loaded from <strong>Azure AI Search</strong> (hybrid lexical + vector) using the same feature shape as Ingest.
       </p>
 
       <div className="card">
@@ -90,9 +91,23 @@ export function AssessPage() {
               <span className={`risk-pill ${data.risk}`}>{riskLabel}</span>
             </div>
             <div>
-              <strong style={{ color: "var(--text)" }}>Reason</strong>
+              <strong style={{ color: "var(--text)" }}>Search summary</strong>
               <p style={{ margin: "0.35rem 0 0", color: "var(--muted)" }}>{data.reason}</p>
             </div>
+            {(data.aiLabel != null && data.aiLabel !== "") || (data.aiReason != null && data.aiReason !== "") ? (
+              <div style={{ marginTop: "1rem" }}>
+                <strong style={{ color: "var(--text)" }}>AI decision</strong>
+                {data.aiLabel != null && data.aiLabel !== "" && (
+                  <p style={{ margin: "0.35rem 0 0", color: "var(--muted)" }}>
+                    Label:{" "}
+                    <code style={{ color: "var(--accent)" }}>{data.aiLabel}</code>
+                  </p>
+                )}
+                {data.aiReason != null && data.aiReason !== "" && (
+                  <p style={{ margin: "0.35rem 0 0", color: "var(--muted)", whiteSpace: "pre-wrap" }}>{data.aiReason}</p>
+                )}
+              </div>
+            ) : null}
             {data.similarRecords?.length > 0 && (
               <div style={{ marginTop: "1rem" }}>
                 <strong style={{ color: "var(--text)" }}>Similar Records</strong>
@@ -119,9 +134,10 @@ export function AssessPage() {
       </div>
 
       <footer className="config-hint">
-        Java backend (Spring Boot) at{" "}
-        <code>{`{VITE_API_BASE_URL}`}/rag/assess</code>.
-        Response: <code>{`{ "risk": "high"|"low", "reason": "...", "similarRecords": [...] }`}</code>.
+        Java backend runs hybrid similarity on <code>{`{VITE_API_BASE_URL}`}/rag/assess</code>: Azure OpenAI
+        embedding + Azure AI Search, then (if <code>AZURE_OPENAI_CHAT_DEPLOYMENT</code> is set) a chat model returns{" "}
+        <code>aiLabel</code> / <code>aiReason</code>. Response shape:{" "}
+        <code>{`{ "risk", "reason", "similarRecords", "aiLabel"?, "aiReason"? }`}</code>.
       </footer>
     </>
   );

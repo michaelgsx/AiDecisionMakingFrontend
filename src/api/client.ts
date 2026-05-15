@@ -86,6 +86,9 @@ export async function assessRecord(
         { id: "mock-1", snippet: "Semantically similar sample snippet A...", score: 0.91 },
         { id: "mock-2", snippet: "Semantically similar sample snippet B...", score: 0.84 },
       ],
+      aiLabel: len > 120 ? "rejected" : "passed",
+      aiReason:
+        "(Mock) Chat step is not run without a backend; this is static demo text. Configure AZURE_OPENAI_CHAT_DEPLOYMENT on the server for real labels.",
     };
   }
   if (!root) {

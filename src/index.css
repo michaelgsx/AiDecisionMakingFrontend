@@ -318,6 +318,10 @@ button:disabled {
   background: rgba(78, 207, 138, 0.18);
   color: #7ee8a8;
 }
+.risk-pill.medium {
+  background: rgba(255, 193, 94, 0.2);
+  color: #ffd28a;
+}
 
 .similar-list {
   list-style: none;
