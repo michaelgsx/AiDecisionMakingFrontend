@@ -29,6 +29,18 @@ export type SimilarRecord = {
   id?: string;
   snippet: string;
   score?: number;
+  /** Same as id when indexed with business UUID. */
+  recordId?: string | null;
+  reviewOutcome?: string | null;
+  caseNotes?: string | null;
+  metadataJson?: string | null;
+  /** Full indexed blob (case + metadata shape used for embedding). */
+  content?: string | null;
+  userId?: string | null;
+  scenario?: string | null;
+  transactionId?: string | null;
+  /** Fixed-layout multi-line summary from the API. */
+  readableText?: string | null;
 };
 
 /** Outcome label from the assess chat model (same vocabulary as ingest `reviewOutcome`). */

@@ -113,17 +113,50 @@ export function AssessPage() {
                 <strong style={{ color: "var(--text)" }}>Similar Records</strong>
                 <ul className="similar-list">
                   {data.similarRecords.map((r, i) => (
-                    <li key={r.id ?? i}>
+                    <li key={r.id ?? r.recordId ?? i}>
                       <div className="meta">
                         {r.id != null && <>ID: {r.id}</>}
-                        {r.score != null && (
+                        {r.recordId != null && r.recordId !== r.id && (
                           <>
                             {r.id != null && " · "}
-                            Similarity: {r.score.toFixed?.(3) ?? r.score}
+                            recordId: {r.recordId}
+                          </>
+                        )}
+                        {r.reviewOutcome != null && r.reviewOutcome !== "" && (
+                          <>
+                            {(r.id != null || r.recordId != null) && " · "}
+                            Outcome: <code>{r.reviewOutcome}</code>
+                          </>
+                        )}
+                        {r.score != null && (
+                          <>
+                            {(r.id != null || r.recordId != null || r.reviewOutcome) && " · "}
+                            Similarity: {typeof r.score === "number" ? r.score.toFixed(3) : r.score}
                           </>
                         )}
                       </div>
-                      {r.snippet}
+                      {r.readableText != null && r.readableText.trim() !== "" ? (
+                        <pre
+                          className="similar-readable"
+                          style={{
+                            margin: "0.5rem 0 0",
+                            padding: "0.65rem 0.75rem",
+                            fontSize: "0.82rem",
+                            lineHeight: 1.45,
+                            whiteSpace: "pre-wrap",
+                            wordBreak: "break-word",
+                            background: "var(--surface-2, rgba(0,0,0,0.2))",
+                            borderRadius: "8px",
+                            border: "1px solid var(--border, rgba(255,255,255,0.08))",
+                            maxHeight: "28rem",
+                            overflow: "auto",
+                          }}
+                        >
+                          {r.readableText}
+                        </pre>
+                      ) : (
+                        <p style={{ margin: "0.35rem 0 0", color: "var(--muted)" }}>{r.snippet}</p>
+                      )}
                     </li>
                   ))}
                 </ul>
@@ -137,7 +170,7 @@ export function AssessPage() {
         Java backend runs hybrid similarity on <code>{`{VITE_API_BASE_URL}`}/rag/assess</code>: Azure OpenAI
         embedding + Azure AI Search, then (if <code>AZURE_OPENAI_CHAT_DEPLOYMENT</code> is set) a chat model returns{" "}
         <code>aiLabel</code> / <code>aiReason</code>. Response shape:{" "}
-        <code>{`{ "risk", "reason", "similarRecords", "aiLabel"?, "aiReason"? }`}</code>.
+        <code>{`{ "risk", "reason", "similarRecords" (with readableText, metadataJson, …), "aiLabel"?, "aiReason"? }`}</code>.
       </footer>
     </>
   );
