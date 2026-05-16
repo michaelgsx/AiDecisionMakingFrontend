@@ -90,24 +90,38 @@ export function AssessPage() {
             <div style={{ marginBottom: "0.75rem" }}>
               <span className={`risk-pill ${data.risk}`}>{riskLabel}</span>
             </div>
-            <div>
+
+            {/* Chat JSON uses key "reason"; HTTP API exposes it as aiReason (distinct from top-level "reason"). */}
+            <div style={{ marginTop: "0.25rem" }}>
+              <strong style={{ color: "var(--text)" }}>AI reasoning</strong>
+              <p style={{ margin: "0.25rem 0 0", fontSize: "0.85rem", color: "var(--muted)" }}>
+                Full model write-up (maps to the chat completion JSON field <code>reason</code> → API{" "}
+                <code>aiReason</code>). This is separate from the short retrieval line below.
+              </p>
+              {data.aiLabel != null && data.aiLabel !== "" && (
+                <p style={{ margin: "0.35rem 0 0", color: "var(--muted)" }}>
+                  Label:{" "}
+                  <code style={{ color: "var(--accent)" }}>{data.aiLabel}</code>
+                </p>
+              )}
+              {data.aiReason != null && data.aiReason !== "" ? (
+                <p style={{ margin: "0.5rem 0 0", color: "var(--muted)", whiteSpace: "pre-wrap" }}>{data.aiReason}</p>
+              ) : (
+                <p style={{ margin: "0.5rem 0 0", color: "var(--muted)", fontStyle: "italic" }}>
+                  No AI reasoning returned. The chat step may be off (<code>AZURE_OPENAI_SKIP_CHAT</code>), missing
+                  deployment (<code>AZURE_OPENAI_CHAT_DEPLOYMENT</code>), or the call failed — check backend logs.
+                </p>
+              )}
+            </div>
+
+            <div style={{ marginTop: "1.1rem" }}>
               <strong style={{ color: "var(--text)" }}>Search summary</strong>
+              <p style={{ margin: "0.25rem 0 0", fontSize: "0.85rem", color: "var(--muted)" }}>
+                Short retrieval stats only (API field <code>reason</code>).
+              </p>
               <p style={{ margin: "0.35rem 0 0", color: "var(--muted)" }}>{data.reason}</p>
             </div>
-            {(data.aiLabel != null && data.aiLabel !== "") || (data.aiReason != null && data.aiReason !== "") ? (
-              <div style={{ marginTop: "1rem" }}>
-                <strong style={{ color: "var(--text)" }}>AI decision</strong>
-                {data.aiLabel != null && data.aiLabel !== "" && (
-                  <p style={{ margin: "0.35rem 0 0", color: "var(--muted)" }}>
-                    Label:{" "}
-                    <code style={{ color: "var(--accent)" }}>{data.aiLabel}</code>
-                  </p>
-                )}
-                {data.aiReason != null && data.aiReason !== "" && (
-                  <p style={{ margin: "0.35rem 0 0", color: "var(--muted)", whiteSpace: "pre-wrap" }}>{data.aiReason}</p>
-                )}
-              </div>
-            ) : null}
+
             {data.similarRecords?.length > 0 && (
               <div style={{ marginTop: "1rem" }}>
                 <strong style={{ color: "var(--text)" }}>Similar Records</strong>
@@ -167,10 +181,10 @@ export function AssessPage() {
       </div>
 
       <footer className="config-hint">
-        Java backend runs hybrid similarity on <code>{`{VITE_API_BASE_URL}`}/rag/assess</code>: Azure OpenAI
-        embedding + Azure AI Search, then (if <code>AZURE_OPENAI_CHAT_DEPLOYMENT</code> is set) a chat model returns{" "}
-        <code>aiLabel</code> / <code>aiReason</code>. Response shape:{" "}
-        <code>{`{ "risk", "reason", "similarRecords" (with readableText, metadataJson, …), "aiLabel"?, "aiReason"? }`}</code>.
+        <code>/rag/assess</code> returns <code>reason</code> (short search stats) and, when chat runs,{" "}
+        <code>aiLabel</code> / <code>aiReason</code>. The model is asked to put its long analysis in JSON{" "}
+        <code>&quot;reason&quot;</code>, which the backend maps to <code>aiReason</code> — not the top-level{" "}
+        <code>reason</code> field.
       </footer>
     </>
   );
