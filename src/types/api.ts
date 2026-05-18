@@ -46,6 +46,33 @@ export type SimilarRecord = {
 /** Outcome label from the assess chat model (same vocabulary as ingest `reviewOutcome`). */
 export type AiAssessLabel = "passed" | "rejected" | "frozen";
 
+/** Five-part structured reasoning from the assess chat model. */
+export type AiAssessReasoning = {
+  retrievalAndScores?: string | null;
+  featureComparison?: string | null;
+  narrativeAlignment?: string | null;
+  historicalDecisions?: string | null;
+  synthesis?: string | null;
+};
+
+/** One citeable fact supporting the assess label. */
+export type AiAssessEvidenceItem = {
+  kind?: string | null;
+  recordId?: string | null;
+  similarityScore?: number | null;
+  reviewOutcome?: string | null;
+  field?: string | null;
+  value?: string | null;
+  claim?: string | null;
+  quote?: string | null;
+  supportsLabel?: string | null;
+};
+
+export type AiAssessEvidence = {
+  summary?: string | null;
+  items?: AiAssessEvidenceItem[] | null;
+};
+
 export type AssessResponse = {
   /** Heuristic from search scores, or driven by `aiLabel` when the chat step runs. */
   risk: "high" | "low" | "medium";
@@ -53,5 +80,10 @@ export type AssessResponse = {
   similarRecords: SimilarRecord[];
   /** Set when `AZURE_OPENAI_CHAT_DEPLOYMENT` is configured and the chat call succeeds. */
   aiLabel?: AiAssessLabel | string | null;
+  /** Plain-text join of structured reasoning sections (backward compatible). */
   aiReason?: string | null;
+  aiConfidence?: number | null;
+  aiKeyRiskFactors?: string[] | null;
+  aiReasoning?: AiAssessReasoning | null;
+  aiEvidence?: AiAssessEvidence | null;
 };

@@ -2,7 +2,15 @@ import { useCallback, useState } from "react";
 import { assessRecord } from "../api/client";
 import { RiskFeaturesPanel } from "../components/RiskFeaturesPanel";
 import { randomNarrative } from "../risk/randomFill";
-import type { AssessResponse } from "../types/api";
+import type { AiAssessReasoning, AssessResponse } from "../types/api";
+
+const REASONING_SECTIONS: { key: keyof AiAssessReasoning; title: string }[] = [
+  { key: "retrievalAndScores", title: "1) Retrieval & scores" },
+  { key: "featureComparison", title: "2) Feature comparison" },
+  { key: "narrativeAlignment", title: "3) Narrative alignment" },
+  { key: "historicalDecisions", title: "4) Historical decisions" },
+  { key: "synthesis", title: "5) Synthesis" },
+];
 
 function parseFeatureKeys(metadata: string): string[] {
   try {
@@ -91,20 +99,90 @@ export function AssessPage() {
               <span className={`risk-pill ${data.risk}`}>{riskLabel}</span>
             </div>
 
-            {/* Chat JSON uses key "reason"; HTTP API exposes it as aiReason (distinct from top-level "reason"). */}
             <div style={{ marginTop: "0.25rem" }}>
               <strong style={{ color: "var(--text)" }}>AI reasoning</strong>
               <p style={{ margin: "0.25rem 0 0", fontSize: "0.85rem", color: "var(--muted)" }}>
-                Full model write-up (maps to the chat completion JSON field <code>reason</code> → API{" "}
-                <code>aiReason</code>). This is separate from the short retrieval line below.
+                Structured chat JSON (<code>reasoning</code> object) plus optional <code>confidence</code> /{" "}
+                <code>key_risk_factors</code>. Plain-text <code>aiReason</code> is also returned. Separate from search{" "}
+                <code>reason</code> below.
               </p>
               {data.aiLabel != null && data.aiLabel !== "" && (
                 <p style={{ margin: "0.35rem 0 0", color: "var(--muted)" }}>
                   Label:{" "}
                   <code style={{ color: "var(--accent)" }}>{data.aiLabel}</code>
+                  {data.aiConfidence != null && (
+                    <>
+                      {" "}
+                      · Confidence: <code>{data.aiConfidence.toFixed(2)}</code>
+                    </>
+                  )}
                 </p>
               )}
-              {data.aiReason != null && data.aiReason !== "" ? (
+              {data.aiKeyRiskFactors != null && data.aiKeyRiskFactors.length > 0 && (
+                <p style={{ margin: "0.35rem 0 0", color: "var(--muted)" }}>
+                  Key risks:{" "}
+                  {data.aiKeyRiskFactors.map((f) => (
+                    <code key={f} style={{ marginRight: "0.35rem" }}>
+                      {f}
+                    </code>
+                  ))}
+                </p>
+              )}
+              {data.aiEvidence != null &&
+                (data.aiEvidence.summary?.trim() ||
+                  (data.aiEvidence.items != null && data.aiEvidence.items.length > 0)) && (
+                <div style={{ marginTop: "0.75rem" }}>
+                <strong style={{ color: "var(--text)", fontSize: "0.9rem" }}>Evidence</strong>
+                {data.aiEvidence.summary != null && data.aiEvidence.summary.trim() !== "" && (
+                  <p style={{ margin: "0.25rem 0 0", color: "var(--muted)" }}>{data.aiEvidence.summary}</p>
+                )}
+                {data.aiEvidence.items != null && data.aiEvidence.items.length > 0 && (
+                  <ul style={{ margin: "0.5rem 0 0", paddingLeft: "1.25rem", color: "var(--muted)" }}>
+                    {data.aiEvidence.items.map((item, idx) => (
+                      <li key={idx} style={{ marginBottom: "0.5rem" }}>
+                        <code>{item.kind ?? "fact"}</code>
+                        {item.recordId != null && item.recordId !== "" && (
+                          <> · record <code>{item.recordId}</code></>
+                        )}
+                        {item.field != null && item.field !== "" && (
+                          <> · <code>{item.field}</code>=<code>{item.value ?? ""}</code></>
+                        )}
+                        {item.similarityScore != null && (
+                          <> · score {item.similarityScore.toFixed(3)}</>
+                        )}
+                        {item.supportsLabel != null && item.supportsLabel !== "" && (
+                          <> · supports <code>{item.supportsLabel}</code></>
+                        )}
+                        <div style={{ marginTop: "0.2rem" }}>{item.claim}</div>
+                        {item.quote != null && item.quote.trim() !== "" && (
+                          <div style={{ fontSize: "0.85rem", fontStyle: "italic", marginTop: "0.15rem" }}>
+                            “{item.quote}”
+                          </div>
+                        )}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+                </div>
+              )}
+              {data.aiReasoning != null &&
+              REASONING_SECTIONS.some((s) => {
+                const v = data.aiReasoning?.[s.key];
+                return v != null && v.trim() !== "";
+              }) ? (
+                <div style={{ marginTop: "0.65rem", display: "flex", flexDirection: "column", gap: "0.75rem" }}>
+                  {REASONING_SECTIONS.map(({ key, title }) => {
+                    const text = data.aiReasoning?.[key];
+                    if (text == null || text.trim() === "") return null;
+                    return (
+                      <div key={key}>
+                        <strong style={{ color: "var(--text)", fontSize: "0.9rem" }}>{title}</strong>
+                        <p style={{ margin: "0.25rem 0 0", color: "var(--muted)", whiteSpace: "pre-wrap" }}>{text}</p>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : data.aiReason != null && data.aiReason !== "" ? (
                 <p style={{ margin: "0.5rem 0 0", color: "var(--muted)", whiteSpace: "pre-wrap" }}>{data.aiReason}</p>
               ) : (
                 <p style={{ margin: "0.5rem 0 0", color: "var(--muted)", fontStyle: "italic" }}>
@@ -182,9 +260,8 @@ export function AssessPage() {
 
       <footer className="config-hint">
         <code>/rag/assess</code> returns <code>reason</code> (short search stats) and, when chat runs,{" "}
-        <code>aiLabel</code> / <code>aiReason</code>. The model is asked to put its long analysis in JSON{" "}
-        <code>&quot;reason&quot;</code>, which the backend maps to <code>aiReason</code> — not the top-level{" "}
-        <code>reason</code> field.
+        <code>aiLabel</code>, structured <code>aiReasoning</code>, optional <code>aiConfidence</code> /{" "}
+        <code>aiKeyRiskFactors</code>, and plain-text <code>aiReason</code>.
       </footer>
     </>
   );
