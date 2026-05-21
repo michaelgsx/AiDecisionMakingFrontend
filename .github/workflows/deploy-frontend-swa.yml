@@ -36,10 +36,10 @@ on:
         type: string
         default: ai-rag-key
   push:
-    branches: [main, v1]
+    branches: [main]
   pull_request:
     types: [opened, synchronize, reopened, closed]
-    branches: [main, v1]
+    branches: [main]
 
 jobs:
   build_and_deploy:

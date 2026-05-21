@@ -1,37 +1,21 @@
-# Deploy Node API (server/) to Azure App Service (Linux, Node 20).
-# Create a separate Web App for the API (Static Web Apps only serves static files).
+# Optional: deploy legacy Node API in server/ to a *separate* App Service.
+# Production API is the Spring Boot app in AiDecisionMakingBackend (ai-rag-webapp).
 #
-# Your SQL (example):
-#   Server:   ai-rag-sql-server.database.windows.net
-#   Database: ai-rag-db-1
-#
-# In Azure Portal → API Web App → Configuration → Application settings (not GitHub secrets):
-#   AZURE_SQL_SERVER              = ai-rag-sql-server.database.windows.net
-#   AZURE_SQL_PORT                = 1433
-#   AZURE_SQL_DATABASE            = ai-rag-db-1
-#   AZURE_SQL_USER                = <sql login>
-#   AZURE_SQL_PASSWORD            = @Microsoft.KeyVault(SecretUri=...)  # or reference Key Vault
-#   AZURE_SQL_ENCRYPT             = true
-#   AZURE_SQL_TRUST_CERTIFICATE   = false
-#   OPS_TOKEN                     = <same as GitHub secret VITE_OPS_TOKEN if you use auth>
-#   WEBSITES_PORT                 = 8080   # only if you override PORT below
+# Does not run on push by default — avoids failed runs when secrets are unset.
+# Manual run: Actions → "Deploy API (Azure App Service)" → Run workflow.
 #
 # GitHub → Settings → Secrets and variables → Actions:
-#   AZURE_WEBAPP_PUBLISH_PROFILE   (Portal: API Web App → Download publish profile; paste entire XML)
-#   AZURE_WEBAPP_API_NAME          = Web App name (e.g. ai-rag-api)
+#   AZURE_CREDENTIALS          (same JSON SP as SWA / backend deploy)
+#   AZURE_WEBAPP_API_NAME      (e.g. ai-rag-api — must be a dedicated Node Web App)
 
 name: Deploy API (Azure App Service)
 
 on:
   workflow_dispatch:
-  push:
-    branches: [main, v1]
-    paths:
-      - "server/**"
-      - ".github/workflows/deploy-api-appservice.yml"
 
 jobs:
   deploy:
+    if: ${{ secrets.AZURE_CREDENTIALS != '' && secrets.AZURE_WEBAPP_API_NAME != '' }}
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -48,9 +32,17 @@ jobs:
           npm install --omit=dev
           zip -r ../api-deploy.zip . -x "*.env"
 
+      - name: Azure login (service principal)
+        uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
       - name: Deploy to Azure Web App
         uses: azure/webapps-deploy@v3
         with:
           app-name: ${{ secrets.AZURE_WEBAPP_API_NAME }}
-          publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
           package: api-deploy.zip
+
+      - name: Azure logout
+        if: always()
+        run: az logout || true
