@@ -17,6 +17,34 @@ Vite + React + TypeScript SPA for **ingesting** labeled risk cases and **assessi
 
 **Branch:** `v1` (deployed to Azure Static Web Apps).
 
+## Screenshots
+
+All values shown below are **randomly AI-generated** demo data (see disclaimer above).
+
+### Ingest (`/`)
+
+Structured risk features merged into metadata JSON, then submitted with Pass / Reject / Freeze.
+
+<p align="center">
+  <img src="docs/screenshots/ingest.png" alt="Ingest page — risk features form" width="900" />
+</p>
+
+<p align="center">
+  <img src="docs/screenshots/ingest-review-modal.png" alt="Ingest — review modal with metadata JSON preview and action buttons" width="900" />
+</p>
+
+### Assess (`/assess`)
+
+Hybrid search + optional LLM reasoning (mock responses when `VITE_USE_MOCK=true` or chat is disabled on the server).
+
+<p align="center">
+  <img src="docs/screenshots/assess-features.png" alt="Assess page — risk features (same shape as ingest)" width="900" />
+</p>
+
+<p align="center">
+  <img src="docs/screenshots/assess-results.png" alt="Assess results — risk label, AI reasoning, search summary, similar records" width="900" />
+</p>
+
 ## Features
 
 | Route | Page | API |
