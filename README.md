@@ -17,6 +17,8 @@ Vite + React + TypeScript SPA for **ingesting** labeled risk cases and **assessi
 
 **Branch:** `v1` (deployed to Azure Static Web Apps).
 
+**Live app:** [https://mango-desert-0bc0f121e.7.azurestaticapps.net/](https://mango-desert-0bc0f121e.7.azurestaticapps.net/)
+
 ## Screenshots
 
 All values shown below are **randomly AI-generated** demo data (see disclaimer above).
